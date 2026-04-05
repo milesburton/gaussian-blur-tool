@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots",
     "preview": "vite preview",
     "prepare": "husky"
   },
