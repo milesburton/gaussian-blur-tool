@@ -3,10 +3,12 @@ import { BlurCanvas } from '@/components/BlurCanvas'
 import { BlurControls } from '@/components/BlurControls'
 import { DropZone } from '@/components/DropZone'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import type { SelectionMode } from '@/types'
 
 function App() {
   const { image, fileName, handleFiles, clear } = useImageUpload()
   const [blurRadius, setBlurRadius] = useState(15)
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>('rectangle')
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -34,8 +36,13 @@ function App() {
                 Remove image
               </button>
             </div>
-            <BlurControls radius={blurRadius} onRadiusChange={setBlurRadius} />
-            <BlurCanvas image={image} blurRadius={blurRadius} />
+            <BlurControls
+              radius={blurRadius}
+              onRadiusChange={setBlurRadius}
+              selectionMode={selectionMode}
+              onSelectionModeChange={setSelectionMode}
+            />
+            <BlurCanvas image={image} blurRadius={blurRadius} selectionMode={selectionMode} />
           </div>
         )}
       </div>
