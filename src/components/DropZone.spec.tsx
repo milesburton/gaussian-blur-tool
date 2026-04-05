@@ -7,7 +7,6 @@ describe('DropZone', () => {
   it('renders the drop zone with instructions', () => {
     render(<DropZone onFiles={vi.fn()} />)
     expect(screen.getByText(/drop an image here/i)).toBeInTheDocument()
-    expect(screen.getByText(/supports png, jpeg/i)).toBeInTheDocument()
   })
 
   it('renders as a button element', () => {

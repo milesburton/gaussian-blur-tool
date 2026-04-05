@@ -51,9 +51,6 @@ export function DropZone({ onFiles }: DropZoneProps) {
       <p className="text-lg text-gray-600 dark:text-gray-300">
         Drop an image here or click to upload
       </p>
-      <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
-        Supports PNG, JPEG, WebP, and more
-      </p>
     </button>
   )
 }
