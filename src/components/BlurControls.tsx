@@ -67,7 +67,7 @@ export function BlurControls({
             type="text"
             value={detectQuery}
             onChange={(e) => onDetectQueryChange(e.target.value)}
-            placeholder="What to blur (e.g. laptop, person, car)"
+            placeholder="What to blur, e.g. license plate, face, screen"
             data-testid="detect-query"
             className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
           />
