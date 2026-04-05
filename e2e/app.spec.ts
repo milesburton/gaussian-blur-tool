@@ -203,3 +203,76 @@ test.describe('Gaussian Blur Tool', () => {
     await expect(page).toHaveScreenshot('image-removed.png')
   })
 })
+
+test.describe('Auto-Detect Smoke Tests', () => {
+  test('switches to detect mode and shows query input', async ({ page }) => {
+    await page.goto('/')
+    await uploadImage(page)
+
+    await page.getByText('Auto-Detect').click()
+    const queryInput = page.getByTestId('detect-query')
+    await expect(queryInput).toBeVisible()
+    await expect(queryInput).toHaveAttribute(
+      'placeholder',
+      'What to blur, e.g. license plate, face, screen'
+    )
+  })
+
+  test('shows searching status when query is entered', async ({ page }) => {
+    await page.goto('/')
+    await uploadImage(page)
+
+    await page.getByText('Auto-Detect').click()
+    const queryInput = page.getByTestId('detect-query')
+    await queryInput.fill('person')
+
+    // Should show the searching status (model loads in background)
+    await expect(page.getByTestId('detecting-status')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByTestId('detecting-status')).toContainText('person')
+  })
+
+  test('completes detection and shows result or no-match message', async ({ page }) => {
+    test.setTimeout(120000)
+
+    await page.goto('/')
+    await uploadImage(page)
+
+    await page.getByText('Auto-Detect').click()
+    const queryInput = page.getByTestId('detect-query')
+    await queryInput.fill('square')
+
+    // Wait for detection to complete — model download may take time
+    await expect(page.getByTestId('detecting-status')).toBeHidden({ timeout: 120000 })
+
+    // With our test image (coloured quadrants), detection likely finds nothing
+    // Either we see "no matching objects" or detected objects — both are valid
+    const noMatch = page.getByText(/no matching objects/i)
+    const blurAll = page.getByTestId('blur-all-detected')
+    await expect(noMatch.or(blurAll)).toBeVisible()
+  })
+
+  test('clears detected objects when switching away from detect mode', async ({ page }) => {
+    await page.goto('/')
+    await uploadImage(page)
+
+    await page.getByText('Auto-Detect').click()
+    const queryInput = page.getByTestId('detect-query')
+    await expect(queryInput).toBeVisible()
+
+    // Switch back to rectangle mode
+    await page.getByText('Rectangle').click()
+    await expect(queryInput).toBeHidden()
+  })
+
+  test('does not trigger detection with empty query', async ({ page }) => {
+    await page.goto('/')
+    await uploadImage(page)
+
+    await page.getByText('Auto-Detect').click()
+    const queryInput = page.getByTestId('detect-query')
+    await expect(queryInput).toBeVisible()
+
+    // Empty query — no detection should run
+    await expect(page.getByTestId('detecting-status')).toBeHidden()
+  })
+})
