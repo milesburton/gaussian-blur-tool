@@ -9,6 +9,7 @@ interface BlurCanvasProps {
   image: HTMLImageElement
   blurRadius: number
   selectionMode: SelectionMode
+  detectQuery: string
 }
 
 function drawSelection(ctx: CanvasRenderingContext2D, selection: Selection) {
@@ -67,7 +68,7 @@ function hasSelectionArea(selection: Selection): boolean {
   return selection.points.length >= 3
 }
 
-export function BlurCanvas({ image, blurRadius, selectionMode }: BlurCanvasProps) {
+export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: BlurCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const currentDataRef = useRef<ImageData | null>(null)
   const { canUndo, canRedo, pushState, undo, redo, clear: clearHistory } = useHistory()
@@ -93,19 +94,31 @@ export function BlurCanvas({ image, blurRadius, selectionMode }: BlurCanvasProps
     setDetectedObjects([])
   }, [image, clearHistory])
 
-  // Run object detection when switching to detect mode
+  // Run object detection when query changes in detect mode
   useEffect(() => {
-    if (selectionMode !== 'detect') return
+    if (selectionMode !== 'detect') {
+      setDetectedObjects([])
+      return
+    }
+
+    if (!detectQuery.trim()) {
+      setDetectedObjects([])
+      return
+    }
 
     setIsDetecting(true)
-    detectObjects(image)
-      .then((objects) => {
-        setDetectedObjects(objects)
-      })
-      .finally(() => {
-        setIsDetecting(false)
-      })
-  }, [selectionMode, image])
+    const timer = setTimeout(() => {
+      detectObjects(image, detectQuery)
+        .then((objects) => {
+          setDetectedObjects(objects)
+        })
+        .finally(() => {
+          setIsDetecting(false)
+        })
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [selectionMode, image, detectQuery])
 
   // Redraw canvas with current state + overlays
   useEffect(() => {
@@ -361,9 +374,17 @@ export function BlurCanvas({ image, blurRadius, selectionMode }: BlurCanvasProps
           className="text-sm text-yellow-600 dark:text-yellow-400"
           data-testid="detecting-status"
         >
-          Detecting objects...
+          Searching for "{detectQuery}"...
         </div>
       )}
+      {selectionMode === 'detect' &&
+        !isDetecting &&
+        detectQuery.trim() &&
+        detectedObjects.length === 0 && (
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            No matching objects found for "{detectQuery}".
+          </div>
+        )}
       <canvas
         ref={canvasRef}
         data-testid="blur-canvas"

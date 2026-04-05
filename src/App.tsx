@@ -9,16 +9,17 @@ function App() {
   const { image, fileName, handleFiles, clear } = useImageUpload()
   const [blurRadius, setBlurRadius] = useState(15)
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('rectangle')
+  const [detectQuery, setDetectQuery] = useState('')
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-8">
+        <header className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
             Gaussian Blur Tool
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Select a region to blur. Your images never leave your browser.
+            Your images never leave your browser.
           </p>
         </header>
 
@@ -41,8 +42,15 @@ function App() {
               onRadiusChange={setBlurRadius}
               selectionMode={selectionMode}
               onSelectionModeChange={setSelectionMode}
+              detectQuery={detectQuery}
+              onDetectQueryChange={setDetectQuery}
             />
-            <BlurCanvas image={image} blurRadius={blurRadius} selectionMode={selectionMode} />
+            <BlurCanvas
+              image={image}
+              blurRadius={blurRadius}
+              selectionMode={selectionMode}
+              detectQuery={detectQuery}
+            />
           </div>
         )}
       </div>

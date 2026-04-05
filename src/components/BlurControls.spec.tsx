@@ -8,6 +8,8 @@ const defaultProps = {
   onRadiusChange: vi.fn(),
   selectionMode: 'rectangle' as const,
   onSelectionModeChange: vi.fn(),
+  detectQuery: '',
+  onDetectQueryChange: vi.fn(),
 }
 
 describe('BlurControls', () => {
@@ -62,5 +64,30 @@ describe('BlurControls', () => {
 
     await user.click(screen.getByText('Auto-Detect'))
     expect(onSelectionModeChange).toHaveBeenCalledWith('detect')
+  })
+
+  it('does not show detect query input in rectangle mode', () => {
+    render(<BlurControls {...defaultProps} selectionMode="rectangle" />)
+    expect(screen.queryByTestId('detect-query')).not.toBeInTheDocument()
+  })
+
+  it('shows detect query input in detect mode', () => {
+    render(<BlurControls {...defaultProps} selectionMode="detect" />)
+    expect(screen.getByTestId('detect-query')).toBeInTheDocument()
+  })
+
+  it('calls onDetectQueryChange when typing in detect query', async () => {
+    const user = userEvent.setup()
+    const onDetectQueryChange = vi.fn()
+    render(
+      <BlurControls
+        {...defaultProps}
+        selectionMode="detect"
+        onDetectQueryChange={onDetectQueryChange}
+      />
+    )
+
+    await user.type(screen.getByTestId('detect-query'), 'laptop')
+    expect(onDetectQueryChange).toHaveBeenCalled()
   })
 })
