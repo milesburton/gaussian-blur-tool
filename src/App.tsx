@@ -3,12 +3,10 @@ import { BlurCanvas } from '@/components/BlurCanvas'
 import { BlurControls } from '@/components/BlurControls'
 import { DropZone } from '@/components/DropZone'
 import { useImageUpload } from '@/hooks/useImageUpload'
-import type { SelectionMode } from '@/types'
 
 function App() {
   const { image, fileName, handleFiles, clear } = useImageUpload()
   const [blurRadius, setBlurRadius] = useState(15)
-  const [selectionMode, setSelectionMode] = useState<SelectionMode>('rectangle')
   const [detectQuery, setDetectQuery] = useState('')
 
   return (
@@ -18,9 +16,6 @@ function App() {
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
             Gaussian Blur Tool
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Your images never leave your browser.
-          </p>
         </header>
 
         {!image ? (
@@ -40,17 +35,10 @@ function App() {
             <BlurControls
               radius={blurRadius}
               onRadiusChange={setBlurRadius}
-              selectionMode={selectionMode}
-              onSelectionModeChange={setSelectionMode}
               detectQuery={detectQuery}
               onDetectQueryChange={setDetectQuery}
             />
-            <BlurCanvas
-              image={image}
-              blurRadius={blurRadius}
-              selectionMode={selectionMode}
-              detectQuery={detectQuery}
-            />
+            <BlurCanvas image={image} blurRadius={blurRadius} detectQuery={detectQuery} />
           </div>
         )}
       </div>

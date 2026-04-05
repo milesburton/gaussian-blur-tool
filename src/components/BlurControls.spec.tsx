@@ -6,8 +6,6 @@ import { BlurControls } from './BlurControls'
 const defaultProps = {
   radius: 15,
   onRadiusChange: vi.fn(),
-  selectionMode: 'rectangle' as const,
-  onSelectionModeChange: vi.fn(),
   detectQuery: '',
   onDetectQueryChange: vi.fn(),
 }
@@ -41,51 +39,16 @@ describe('BlurControls', () => {
     expect(onRadiusChange).toHaveBeenCalledWith(20)
   })
 
-  it('renders selection mode buttons', () => {
+  it('renders the auto-detect input', () => {
     render(<BlurControls {...defaultProps} />)
-    expect(screen.getByText('Rectangle')).toBeInTheDocument()
-    expect(screen.getByText('Freeform')).toBeInTheDocument()
-    expect(screen.getByText('Auto-Detect')).toBeInTheDocument()
-  })
-
-  it('highlights the active selection mode', () => {
-    render(<BlurControls {...defaultProps} selectionMode="freeform" />)
-    const freeformBtn = screen.getByText('Freeform')
-    expect(freeformBtn.className).toContain('bg-blue-600')
-  })
-
-  it('calls onSelectionModeChange when a mode button is clicked', async () => {
-    const user = userEvent.setup()
-    const onSelectionModeChange = vi.fn()
-    render(<BlurControls {...defaultProps} onSelectionModeChange={onSelectionModeChange} />)
-
-    await user.click(screen.getByText('Freeform'))
-    expect(onSelectionModeChange).toHaveBeenCalledWith('freeform')
-
-    await user.click(screen.getByText('Auto-Detect'))
-    expect(onSelectionModeChange).toHaveBeenCalledWith('detect')
-  })
-
-  it('does not show detect query input in rectangle mode', () => {
-    render(<BlurControls {...defaultProps} selectionMode="rectangle" />)
-    expect(screen.queryByTestId('detect-query')).not.toBeInTheDocument()
-  })
-
-  it('shows detect query input in detect mode', () => {
-    render(<BlurControls {...defaultProps} selectionMode="detect" />)
     expect(screen.getByTestId('detect-query')).toBeInTheDocument()
+    expect(screen.getByText('Auto-Detect')).toBeInTheDocument()
   })
 
   it('calls onDetectQueryChange when typing in detect query', async () => {
     const user = userEvent.setup()
     const onDetectQueryChange = vi.fn()
-    render(
-      <BlurControls
-        {...defaultProps}
-        selectionMode="detect"
-        onDetectQueryChange={onDetectQueryChange}
-      />
-    )
+    render(<BlurControls {...defaultProps} onDetectQueryChange={onDetectQueryChange} />)
 
     await user.type(screen.getByTestId('detect-query'), 'laptop')
     expect(onDetectQueryChange).toHaveBeenCalled()

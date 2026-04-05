@@ -10,7 +10,7 @@ export interface Region {
   height: number
 }
 
-export type SelectionMode = 'rectangle' | 'freeform' | 'detect'
+export type SelectionMode = 'rectangle' | 'freeform'
 
 export interface RectangleSelection {
   type: 'rectangle'

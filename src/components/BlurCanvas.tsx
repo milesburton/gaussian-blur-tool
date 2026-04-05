@@ -1,14 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useHistory } from '@/hooks/useHistory'
 import { useRegionSelection } from '@/hooks/useRegionSelection'
 import { detectObjects } from '@/lib/detect-objects'
 import { applyBlurToSelection } from '@/lib/gaussian-blur'
-import type { DetectedObject, Selection, SelectionMode } from '@/types'
+import type { DetectedObject, Selection } from '@/types'
 
 interface BlurCanvasProps {
   image: HTMLImageElement
   blurRadius: number
-  selectionMode: SelectionMode
   detectQuery: string
 }
 
@@ -20,22 +19,6 @@ function drawSelection(ctx: CanvasRenderingContext2D, selection: Selection) {
   if (selection.type === 'rectangle') {
     const { x, y, width, height } = selection.region
     ctx.strokeRect(x, y, width, height)
-  } else if (selection.points.length >= 2) {
-    ctx.beginPath()
-    const first = selection.points[0]
-    if (first) {
-      ctx.moveTo(first.x, first.y)
-      for (let i = 1; i < selection.points.length; i++) {
-        const p = selection.points[i]
-        if (p) ctx.lineTo(p.x, p.y)
-      }
-      ctx.closePath()
-      ctx.stroke()
-
-      // Semi-transparent fill
-      ctx.fillStyle = 'rgba(59, 130, 246, 0.1)'
-      ctx.fill()
-    }
   }
 
   ctx.setLineDash([])
@@ -50,7 +33,6 @@ function drawDetectedObjects(ctx: CanvasRenderingContext2D, objects: DetectedObj
     ctx.strokeRect(x, y, w, h)
     ctx.setLineDash([])
 
-    // Label
     const label = `${obj.class} (${Math.round(obj.score * 100)}%)`
     ctx.font = '14px system-ui, sans-serif'
     const metrics = ctx.measureText(label)
@@ -61,21 +43,16 @@ function drawDetectedObjects(ctx: CanvasRenderingContext2D, objects: DetectedObj
   }
 }
 
-function hasSelectionArea(selection: Selection): boolean {
-  if (selection.type === 'rectangle') {
-    return selection.region.width > 0 && selection.region.height > 0
-  }
-  return selection.points.length >= 3
-}
-
-export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: BlurCanvasProps) {
+export function BlurCanvas({ image, blurRadius, detectQuery }: BlurCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const currentDataRef = useRef<ImageData | null>(null)
   const { canUndo, canRedo, pushState, undo, redo, clear: clearHistory } = useHistory()
   const { selection, isSelecting, onMouseDown, onMouseMove, onMouseUp, clearSelection } =
-    useRegionSelection(canvasRef, selectionMode)
+    useRegionSelection(canvasRef)
   const [detectedObjects, setDetectedObjects] = useState<DetectedObject[]>([])
   const [isDetecting, setIsDetecting] = useState(false)
+
+  const hasDetectQuery = useMemo(() => detectQuery.trim().length > 0, [detectQuery])
 
   // Draw the image onto the canvas
   useEffect(() => {
@@ -94,14 +71,9 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
     setDetectedObjects([])
   }, [image, clearHistory])
 
-  // Run object detection when query changes in detect mode
+  // Run object detection when query changes
   useEffect(() => {
-    if (selectionMode !== 'detect') {
-      setDetectedObjects([])
-      return
-    }
-
-    if (!detectQuery.trim()) {
+    if (!hasDetectQuery) {
       setDetectedObjects([])
       return
     }
@@ -118,7 +90,7 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [selectionMode, image, detectQuery])
+  }, [image, detectQuery, hasDetectQuery])
 
   // Redraw canvas with current state + overlays
   useEffect(() => {
@@ -129,9 +101,12 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Start from current committed state
-    if (selection && hasSelectionArea(selection)) {
-      // Show preview: blur applied to selection
+    if (
+      selection &&
+      selection.type === 'rectangle' &&
+      selection.region.width > 0 &&
+      selection.region.height > 0
+    ) {
       const previewData = applyBlurToSelection(
         new ImageData(
           new Uint8ClampedArray(currentData.data),
@@ -147,21 +122,26 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
       ctx.putImageData(currentData, 0, 0)
     }
 
-    // Draw detected object overlays
-    if (selectionMode === 'detect' && detectedObjects.length > 0) {
+    if (detectedObjects.length > 0) {
       drawDetectedObjects(ctx, detectedObjects)
     }
-  }, [selection, blurRadius, detectedObjects, selectionMode])
+  }, [selection, blurRadius, detectedObjects])
 
   const handleApplyBlur = useCallback(() => {
     const currentData = currentDataRef.current
-    if (!currentData || !selection || !hasSelectionArea(selection)) return
+    if (
+      !currentData ||
+      !selection ||
+      selection.type !== 'rectangle' ||
+      selection.region.width <= 0 ||
+      selection.region.height <= 0
+    )
+      return
 
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!ctx) return
 
-    // Save current state for undo
     pushState(currentData)
 
     const blurredData = applyBlurToSelection(
@@ -202,7 +182,6 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
       currentDataRef.current = blurredData
       ctx.putImageData(blurredData, 0, 0)
 
-      // Redraw remaining detected object overlays
       drawDetectedObjects(ctx, detectedObjects)
     },
     [blurRadius, pushState, detectedObjects]
@@ -263,7 +242,6 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
     clearSelection()
   }, [redo, clearSelection])
 
-  // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
@@ -289,10 +267,9 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
     link.click()
   }, [])
 
-  // Handle clicking on a detected object
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (selectionMode !== 'detect' || detectedObjects.length === 0) return
+      if (detectedObjects.length === 0) return
 
       const canvas = canvasRef.current
       if (!canvas) return
@@ -303,7 +280,6 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
       const x = (e.clientX - rect.left) * scaleX
       const y = (e.clientY - rect.top) * scaleY
 
-      // Find clicked object
       for (const obj of detectedObjects) {
         const [bx, by, bw, bh] = obj.bbox
         if (x >= bx && x <= bx + bw && y >= by && y <= by + bh) {
@@ -312,10 +288,15 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
         }
       }
     },
-    [selectionMode, detectedObjects, handleBlurDetectedObject]
+    [detectedObjects, handleBlurDetectedObject]
   )
 
-  const showApplyButton = selection && !isSelecting && hasSelectionArea(selection)
+  const showApplyButton =
+    selection &&
+    !isSelecting &&
+    selection.type === 'rectangle' &&
+    selection.region.width > 0 &&
+    selection.region.height > 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -350,7 +331,7 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
               Apply Blur
             </button>
           )}
-          {selectionMode === 'detect' && detectedObjects.length > 0 && (
+          {detectedObjects.length > 0 && (
             <button
               type="button"
               onClick={handleBlurAllDetected}
@@ -377,25 +358,20 @@ export function BlurCanvas({ image, blurRadius, selectionMode, detectQuery }: Bl
           Searching for "{detectQuery}"...
         </div>
       )}
-      {selectionMode === 'detect' &&
-        !isDetecting &&
-        detectQuery.trim() &&
-        detectedObjects.length === 0 && (
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            No matching objects found for "{detectQuery}".
-          </div>
-        )}
+      {!isDetecting && hasDetectQuery && detectedObjects.length === 0 && (
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          No matching objects found for "{detectQuery}".
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         data-testid="blur-canvas"
-        onMouseDown={selectionMode !== 'detect' ? onMouseDown : undefined}
-        onMouseMove={selectionMode !== 'detect' ? onMouseMove : undefined}
-        onMouseUp={selectionMode !== 'detect' ? onMouseUp : undefined}
-        onMouseLeave={selectionMode !== 'detect' ? onMouseUp : undefined}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
         onClick={handleCanvasClick}
-        className={`max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded ${
-          selectionMode === 'detect' ? 'cursor-pointer' : 'cursor-crosshair'
-        }`}
+        className="max-w-full h-auto border border-gray-200 dark:border-gray-700 rounded cursor-crosshair"
       />
     </div>
   )

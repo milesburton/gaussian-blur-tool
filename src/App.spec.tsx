@@ -8,11 +8,6 @@ describe('App', () => {
     expect(screen.getByText('Gaussian Blur Tool')).toBeInTheDocument()
   })
 
-  it('renders the privacy message', () => {
-    render(<App />)
-    expect(screen.getByText(/images never leave your browser/i)).toBeInTheDocument()
-  })
-
   it('shows the drop zone when no image is loaded', () => {
     render(<App />)
     expect(screen.getByTestId('drop-zone')).toBeInTheDocument()

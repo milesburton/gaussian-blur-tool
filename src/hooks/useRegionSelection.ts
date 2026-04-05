@@ -1,14 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
-import type { Point, Selection, SelectionMode } from '@/types'
+import type { Point, Selection } from '@/types'
 
-export function useRegionSelection(
-  canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  mode: SelectionMode
-) {
+export function useRegionSelection(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
   const [selection, setSelection] = useState<Selection | null>(null)
   const [isSelecting, setIsSelecting] = useState(false)
   const startPoint = useRef<Point | null>(null)
-  const freeformPoints = useRef<Point[]>([])
 
   const getCanvasPoint = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>): Point | null => {
@@ -29,21 +25,14 @@ export function useRegionSelection(
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (mode === 'detect') return
       const point = getCanvasPoint(e)
       if (!point) return
 
       startPoint.current = point
       setIsSelecting(true)
-
-      if (mode === 'freeform') {
-        freeformPoints.current = [point]
-        setSelection({ type: 'freeform', points: [point] })
-      } else {
-        setSelection(null)
-      }
+      setSelection(null)
     },
-    [getCanvasPoint, mode]
+    [getCanvasPoint]
   )
 
   const onMouseMove = useCallback(
@@ -53,29 +42,23 @@ export function useRegionSelection(
       const point = getCanvasPoint(e)
       if (!point) return
 
-      if (mode === 'freeform') {
-        freeformPoints.current.push(point)
-        setSelection({ type: 'freeform', points: [...freeformPoints.current] })
-      } else {
-        const start = startPoint.current
-        setSelection({
-          type: 'rectangle',
-          region: {
-            x: Math.min(start.x, point.x),
-            y: Math.min(start.y, point.y),
-            width: Math.abs(point.x - start.x),
-            height: Math.abs(point.y - start.y),
-          },
-        })
-      }
+      const start = startPoint.current
+      setSelection({
+        type: 'rectangle',
+        region: {
+          x: Math.min(start.x, point.x),
+          y: Math.min(start.y, point.y),
+          width: Math.abs(point.x - start.x),
+          height: Math.abs(point.y - start.y),
+        },
+      })
     },
-    [isSelecting, getCanvasPoint, mode]
+    [isSelecting, getCanvasPoint]
   )
 
   const onMouseUp = useCallback(() => {
     setIsSelecting(false)
     startPoint.current = null
-    freeformPoints.current = []
   }, [])
 
   const clearSelection = useCallback(() => {
@@ -84,7 +67,6 @@ export function useRegionSelection(
 
   return {
     selection,
-    setSelection,
     isSelecting,
     onMouseDown,
     onMouseMove,
