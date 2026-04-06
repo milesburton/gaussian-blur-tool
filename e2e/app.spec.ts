@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const testImage = path.join(__dirname, 'fixtures', 'test-image.png')
+const testImage = path.join(__dirname, 'fixtures', 'test-image.jpg')
 
 async function uploadImage(page: import('@playwright/test').Page) {
   const fileChooserPromise = page.waitForEvent('filechooser')
@@ -25,7 +25,7 @@ test.describe('Gaussian Blur Tool', () => {
     await page.goto('/')
     await uploadImage(page)
 
-    await expect(page.getByText('test-image.png')).toBeVisible()
+    await expect(page.getByText('test-image.jpg')).toBeVisible()
     await expect(page.getByRole('slider')).toBeVisible()
     await expect(page.getByTestId('detect-query')).toBeVisible()
     await expect(page.getByTestId('undo-button')).toBeVisible()
@@ -184,17 +184,21 @@ test.describe('Auto-Detect Smoke Tests', () => {
     await expect(page.getByTestId('detecting-status')).toContainText('person')
   })
 
-  test('completes detection and shows result or no-match message', async ({ page }) => {
-    test.setTimeout(120000)
+  test('completes detection round-trip on a real image', async ({ page }) => {
+    test.setTimeout(180000)
 
     await page.goto('/')
     await uploadImage(page)
 
     const queryInput = page.getByTestId('detect-query')
-    await queryInput.fill('square')
+    await queryInput.fill('laptop')
 
-    await expect(page.getByTestId('detecting-status')).toBeHidden({ timeout: 120000 })
+    // Wait for model download and detection to complete
+    await expect(page.getByTestId('detecting-status')).toBeHidden({ timeout: 180000 })
 
+    // Either we get a detection result or a no-match message — both are
+    // valid outcomes. This smoke test verifies the round-trip works,
+    // not the model's accuracy.
     const noMatch = page.getByText(/no matching objects/i)
     const blurAll = page.getByTestId('blur-all-detected')
     await expect(noMatch.or(blurAll)).toBeVisible()
