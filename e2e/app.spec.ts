@@ -184,7 +184,7 @@ test.describe('Auto-Detect Smoke Tests', () => {
     await expect(page.getByTestId('detecting-status')).toContainText('person')
   })
 
-  test('completes detection round-trip on a real image', async ({ page }) => {
+  test('detects a laptop in the real test image', async ({ page }) => {
     test.setTimeout(180000)
 
     await page.goto('/')
@@ -196,12 +196,26 @@ test.describe('Auto-Detect Smoke Tests', () => {
     // Wait for model download and detection to complete
     await expect(page.getByTestId('detecting-status')).toBeHidden({ timeout: 180000 })
 
-    // Either we get a detection result or a no-match message — both are
-    // valid outcomes. This smoke test verifies the round-trip works,
-    // not the model's accuracy.
-    const noMatch = page.getByText(/no matching objects/i)
-    const blurAll = page.getByTestId('blur-all-detected')
-    await expect(noMatch.or(blurAll)).toBeVisible()
+    // The test image clearly contains a laptop — with the fixes
+    // (q4f16 + "a photo of a" template) OWLv2 should find it.
+    await expect(page.getByTestId('blur-all-detected')).toBeVisible()
+  })
+
+  test('suggested prompt fills the query and triggers detection', async ({ page }) => {
+    await page.goto('/')
+    await uploadImage(page)
+
+    await page.getByTestId('suggested-laptop').click()
+    await expect(page.getByTestId('detect-query')).toHaveValue('laptop')
+    await expect(page.getByTestId('detecting-status')).toBeVisible({ timeout: 10000 })
+  })
+
+  test('try sample image button loads the bundled image', async ({ page }) => {
+    await page.goto('/')
+
+    await page.getByTestId('try-sample').click()
+    await expect(page.getByTestId('blur-canvas')).toBeVisible()
+    await expect(page.getByText('sample-image.jpg')).toBeVisible()
   })
 
   test('does not trigger detection with empty query', async ({ page }) => {

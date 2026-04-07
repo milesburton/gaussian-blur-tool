@@ -1,13 +1,17 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { BlurCanvas } from '@/components/BlurCanvas'
 import { BlurControls } from '@/components/BlurControls'
 import { DropZone } from '@/components/DropZone'
 import { useImageUpload } from '@/hooks/useImageUpload'
 
 function App() {
-  const { image, fileName, handleFiles, clear } = useImageUpload()
+  const { image, blob, fileName, handleFiles, loadFromUrl, clear } = useImageUpload()
   const [blurRadius, setBlurRadius] = useState(15)
   const [detectQuery, setDetectQuery] = useState('')
+
+  const handleTrySample = useCallback(() => {
+    loadFromUrl(`${import.meta.env.BASE_URL}sample-image.jpg`, 'sample-image.jpg')
+  }, [loadFromUrl])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -19,7 +23,7 @@ function App() {
         </header>
 
         {!image ? (
-          <DropZone onFiles={handleFiles} />
+          <DropZone onFiles={handleFiles} onTrySample={handleTrySample} />
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -38,7 +42,12 @@ function App() {
               detectQuery={detectQuery}
               onDetectQueryChange={setDetectQuery}
             />
-            <BlurCanvas image={image} blurRadius={blurRadius} detectQuery={detectQuery} />
+            <BlurCanvas
+              image={image}
+              imageBlob={blob}
+              blurRadius={blurRadius}
+              detectQuery={detectQuery}
+            />
           </div>
         )}
       </div>

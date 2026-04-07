@@ -5,6 +5,8 @@ interface BlurControlsProps {
   onDetectQueryChange: (query: string) => void
 }
 
+const SUGGESTED_PROMPTS = ['laptop', 'face', 'license plate', 'phone', 'screen']
+
 export function BlurControls({
   radius,
   onRadiusChange,
@@ -47,6 +49,20 @@ export function BlurControls({
           data-testid="detect-query"
           className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
         />
+      </div>
+      <div className="flex items-center gap-2 flex-wrap pl-[7.25rem]">
+        <span className="text-xs text-gray-500 dark:text-gray-400">Try:</span>
+        {SUGGESTED_PROMPTS.map((prompt) => (
+          <button
+            key={prompt}
+            type="button"
+            onClick={() => onDetectQueryChange(prompt)}
+            data-testid={`suggested-${prompt.replace(/\s+/g, '-')}`}
+            className="px-2 py-0.5 text-xs rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          >
+            {prompt}
+          </button>
+        ))}
       </div>
     </div>
   )

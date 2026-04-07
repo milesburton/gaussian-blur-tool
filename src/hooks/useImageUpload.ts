@@ -1,17 +1,21 @@
 import { useCallback, useState } from 'react'
 
-export function useImageUpload() {
-  const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [fileName, setFileName] = useState<string | null>(null)
+interface LoadedImage {
+  element: HTMLImageElement
+  blob: Blob
+  fileName: string
+}
 
-  const loadImage = useCallback((file: File) => {
+export function useImageUpload() {
+  const [loaded, setLoaded] = useState<LoadedImage | null>(null)
+
+  const loadImage = useCallback((blob: Blob, fileName: string) => {
     const img = new Image()
-    const url = URL.createObjectURL(file)
+    const url = URL.createObjectURL(blob)
 
     img.onload = () => {
       URL.revokeObjectURL(url)
-      setImage(img)
-      setFileName(file.name)
+      setLoaded({ element: img, blob, fileName })
     }
 
     img.src = url
@@ -21,16 +25,31 @@ export function useImageUpload() {
     (files: FileList | null) => {
       const file = files?.[0]
       if (file?.type.startsWith('image/')) {
-        loadImage(file)
+        loadImage(file, file.name)
       }
     },
     [loadImage]
   )
 
+  const loadFromUrl = useCallback(
+    async (url: string, fileName: string) => {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      loadImage(blob, fileName)
+    },
+    [loadImage]
+  )
+
   const clear = useCallback(() => {
-    setImage(null)
-    setFileName(null)
+    setLoaded(null)
   }, [])
 
-  return { image, fileName, handleFiles, clear }
+  return {
+    image: loaded?.element ?? null,
+    blob: loaded?.blob ?? null,
+    fileName: loaded?.fileName ?? null,
+    handleFiles,
+    loadFromUrl,
+    clear,
+  }
 }

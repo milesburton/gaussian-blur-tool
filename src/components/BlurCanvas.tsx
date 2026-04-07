@@ -7,6 +7,7 @@ import type { DetectedObject, Selection } from '@/types'
 
 interface BlurCanvasProps {
   image: HTMLImageElement
+  imageBlob: Blob | null
   blurRadius: number
   detectQuery: string
 }
@@ -43,7 +44,7 @@ function drawDetectedObjects(ctx: CanvasRenderingContext2D, objects: DetectedObj
   }
 }
 
-export function BlurCanvas({ image, blurRadius, detectQuery }: BlurCanvasProps) {
+export function BlurCanvas({ image, imageBlob, blurRadius, detectQuery }: BlurCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const currentDataRef = useRef<ImageData | null>(null)
   const { canUndo, canRedo, pushState, undo, redo, clear: clearHistory } = useHistory()
@@ -80,7 +81,7 @@ export function BlurCanvas({ image, blurRadius, detectQuery }: BlurCanvasProps) 
 
     setIsDetecting(true)
     const timer = setTimeout(() => {
-      detectObjects(image, detectQuery)
+      detectObjects(imageBlob ?? image, detectQuery)
         .then((objects) => {
           setDetectedObjects(objects)
         })
@@ -90,7 +91,7 @@ export function BlurCanvas({ image, blurRadius, detectQuery }: BlurCanvasProps) 
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [image, detectQuery, hasDetectQuery])
+  }, [image, imageBlob, detectQuery, hasDetectQuery])
 
   // Redraw canvas with current state + overlays
   useEffect(() => {
