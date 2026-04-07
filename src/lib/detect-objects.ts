@@ -23,6 +23,18 @@ let detectorPromise: Promise<{
   RawImage: any
 }> | null = null
 
+async function hasWebGPU(): Promise<boolean> {
+  // biome-ignore lint/suspicious/noExplicitAny: WebGPU types not in lib yet
+  const nav = navigator as any
+  if (!nav?.gpu?.requestAdapter) return false
+  try {
+    const adapter = await nav.gpu.requestAdapter()
+    return adapter !== null
+  } catch {
+    return false
+  }
+}
+
 async function getDetector() {
   if (!detectorPromise) {
     detectorPromise = import('@huggingface/transformers').then(async ({ pipeline, RawImage }) => {
@@ -30,12 +42,33 @@ async function getDetector() {
       // Note: pinned to @huggingface/transformers ^3.8.1 — the v4 line ships
       // with an onnxruntime-web build that fails to resolve Cast(13) ops in
       // every quant variant of OWLv2 / OWL-ViT.
-      const detector = await pipeline(
-        'zero-shot-object-detection',
-        'Xenova/owlv2-base-patch16-ensemble',
-        { dtype: 'q4f16' }
-      )
-      return { detector: detector as unknown as Detector, RawImage }
+      const useWebGPU = await hasWebGPU()
+
+      console.info(`[detect] backend: ${useWebGPU ? 'webgpu' : 'wasm'}`)
+
+      // biome-ignore lint/suspicious/noExplicitAny: device option not in older types
+      const options: any = { dtype: 'q4f16' }
+      if (useWebGPU) options.device = 'webgpu'
+
+      try {
+        const detector = await pipeline(
+          'zero-shot-object-detection',
+          'Xenova/owlv2-base-patch16-ensemble',
+          options
+        )
+        return { detector: detector as unknown as Detector, RawImage }
+      } catch (err) {
+        if (useWebGPU) {
+          console.warn('[detect] WebGPU pipeline failed, falling back to WASM:', err)
+          const detector = await pipeline(
+            'zero-shot-object-detection',
+            'Xenova/owlv2-base-patch16-ensemble',
+            { dtype: 'q4f16' }
+          )
+          return { detector: detector as unknown as Detector, RawImage }
+        }
+        throw err
+      }
     })
   }
   return detectorPromise
