@@ -210,12 +210,25 @@ test.describe('Auto-Detect Smoke Tests', () => {
     await expect(page.getByTestId('detecting-status')).toBeVisible({ timeout: 10000 })
   })
 
-  test('try sample image button loads the bundled image', async ({ page }) => {
+  test('sample gallery loads a bundled image and presets the query', async ({ page }) => {
     await page.goto('/')
 
-    await page.getByTestId('try-sample').click()
+    // Gallery is visible alongside the drop zone before any upload
+    await expect(page.getByTestId('sample-gallery')).toBeVisible()
+
+    await page.getByTestId('sample-laptop-desk').click()
     await expect(page.getByTestId('blur-canvas')).toBeVisible()
-    await expect(page.getByText('sample-image.jpg')).toBeVisible()
+    await expect(page.getByText('laptop-desk.jpg')).toBeVisible()
+    // Selecting a sample also pre-fills the suggested query
+    await expect(page.getByTestId('detect-query')).toHaveValue('laptop')
+  })
+
+  test('all four samples in the gallery are loadable', async ({ page }) => {
+    await page.goto('/')
+
+    for (const id of ['laptop-desk', 'car-license-plate', 'face-portrait', 'smartphone-screen']) {
+      await expect(page.getByTestId(`sample-${id}`)).toBeVisible()
+    }
   })
 
   test('does not trigger detection with empty query', async ({ page }) => {

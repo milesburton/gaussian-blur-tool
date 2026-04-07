@@ -2,10 +2,9 @@ import { useCallback, useState } from 'react'
 
 interface DropZoneProps {
   onFiles: (files: FileList | null) => void
-  onTrySample?: () => void
 }
 
-export function DropZone({ onFiles, onTrySample }: DropZoneProps) {
+export function DropZone({ onFiles }: DropZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -35,43 +34,23 @@ export function DropZone({ onFiles, onTrySample }: DropZoneProps) {
     input.click()
   }, [onFiles])
 
-  const handleSampleClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      onTrySample?.()
-    },
-    [onTrySample]
-  )
-
   return (
-    <div className="flex flex-col items-center gap-3">
-      <button
-        type="button"
-        data-testid="drop-zone"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleClick}
-        className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-12 cursor-pointer transition-colors w-full ${
-          isDragging
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-            : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500'
-        }`}
-      >
-        <p className="text-lg text-gray-600 dark:text-gray-300">
-          Drop an image here or click to upload
-        </p>
-      </button>
-      {onTrySample && (
-        <button
-          type="button"
-          onClick={handleSampleClick}
-          data-testid="try-sample"
-          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-        >
-          or try with a sample image
-        </button>
-      )}
-    </div>
+    <button
+      type="button"
+      data-testid="drop-zone"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      onClick={handleClick}
+      className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-12 cursor-pointer transition-colors w-full ${
+        isDragging
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
+          : 'border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500'
+      }`}
+    >
+      <p className="text-lg text-gray-600 dark:text-gray-300">
+        Drop an image here or click to upload
+      </p>
+    </button>
   )
 }
