@@ -40,6 +40,13 @@ export const SAMPLES: SampleImage[] = [
     description: 'A hand holding a smartphone with a screen',
     suggestedQuery: 'phone',
   },
+  {
+    id: 'monitor-screen',
+    fileName: 'monitor-screen.jpg',
+    label: 'Monitor',
+    description: 'A computer monitor on a desk',
+    suggestedQuery: 'monitor',
+  },
 ]
 
 export function sampleUrl(sample: SampleImage): string {

@@ -223,10 +223,16 @@ test.describe('Auto-Detect Smoke Tests', () => {
     await expect(page.getByTestId('detect-query')).toHaveValue('laptop')
   })
 
-  test('all four samples in the gallery are loadable', async ({ page }) => {
+  test('all samples in the gallery are loadable', async ({ page }) => {
     await page.goto('/')
 
-    for (const id of ['laptop-desk', 'car-license-plate', 'face-portrait', 'smartphone-screen']) {
+    for (const id of [
+      'laptop-desk',
+      'car-license-plate',
+      'face-portrait',
+      'smartphone-screen',
+      'monitor-screen',
+    ]) {
       await expect(page.getByTestId(`sample-${id}`)).toBeVisible()
     }
   })
